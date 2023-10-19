@@ -11,22 +11,41 @@ using Marten.Events;
 using Marten.Events.Daemon.Resiliency;
 using Marten.Events.Projections;
 
+using Oakton;
+
 using Weasel.Core;
+
+using Wolverine;
+using Wolverine.Http;
+using Wolverine.Marten;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.ApplyOaktonExtensions();
+
 builder.Services.AddMarten(opt =>
+       {
+         opt.Connection(builder.Configuration.GetConnectionString("Marten")!);
+         opt.AutoCreateSchemaObjects = AutoCreate.All;
+
+         // opt.Schema.For<Mitarbeiter>().Duplicate(x => x.Vorname).Index(x => x.Vorname);
+
+         opt.Events.StreamIdentity = StreamIdentity.AsString;
+
+         opt.Projections.Add<PlanAufgabenProjection>(ProjectionLifecycle.Async);
+         opt.Projections.Add<AufgabeZuPlanProjection>(ProjectionLifecycle.Async);
+       })
+       .IntegrateWithWolverine("wolverine_messages")
+       .EventForwardingToWolverine()
+       .ApplyAllDatabaseChangesOnStartup()
+       .UseLightweightSessions()
+       .AddAsyncDaemon(DaemonMode.Solo);
+
+builder.Host.UseWolverine(o =>
 {
-  opt.Connection(builder.Configuration.GetConnectionString("Marten")!);
-  opt.AutoCreateSchemaObjects = AutoCreate.All;
-
-  // opt.Schema.For<Mitarbeiter>().Duplicate(x => x.Vorname).Index(x => x.Vorname);
-
-  opt.Events.StreamIdentity = StreamIdentity.AsString;
-
-  opt.Projections.Add<PlanAufgabenProjection>(ProjectionLifecycle.Async);
-  opt.Projections.Add<AufgabeZuPlanProjection>(ProjectionLifecycle.Async);
-}).AddAsyncDaemon(DaemonMode.Solo);
+  o.Policies.AutoApplyTransactions();
+  o.Policies.UseDurableLocalQueues();
+});
 
 // Add services to the container.
 
@@ -45,11 +64,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapPost("/mitarbeiter",
-            ErfassenHandler.MitarbeiterErfassenHandler);
-
-app.MapPatch("/mitarbeiter/{id}/name",
-             NameÄndernHandler.Handle);
+app.MapWolverineEndpoints();
 
 app.MapGet("/mitarbeiter",
            (IDocumentSession session) => session.Query<Mitarbeiter>());
@@ -61,9 +76,9 @@ app.MapPost("/plan/aufgabe",
             AufgabeErfassenHandler.Handle);
 
 app.MapGet("/plan/{id}",
-            AufgabenDesPlansAnzeigenHandler.Handle);
+           AufgabenDesPlansAnzeigenHandler.Handle);
 
 app.MapPost("/aufgabe/{aufgabenId}/beginnen",
             AufgabeBeginnenHandler.Handle);
 
-app.Run();
+await app.RunOaktonCommands(args);

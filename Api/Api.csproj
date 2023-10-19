@@ -10,6 +10,8 @@
         <PackageReference Include="Marten" Version="6.2.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.12"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
+        <PackageReference Include="WolverineFx.Http" Version="1.9.0" />
+        <PackageReference Include="WolverineFx.Marten" Version="1.9.0" />
     </ItemGroup>
 
 

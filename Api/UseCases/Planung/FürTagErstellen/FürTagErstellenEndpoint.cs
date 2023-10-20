@@ -14,9 +14,9 @@ public static class FürTagErstellenEndpoint
   [WolverinePost("/plan")]
   public static (PlanCreationResponse, IStartStream) Handle([FromBody] DateOnly tag)
   {
-    // Validierung vom Tag?
+    // Validierung des Tags, z. B. nur in der Zukunft?
 
-    var key = $"plan/{CombGuidIdGeneration.NewGuid()}";
+    var key = $"plan/{tag.ToString("O")}";
     var ev = new PlanErstellt(tag);
 
     return (new PlanCreationResponse(key),

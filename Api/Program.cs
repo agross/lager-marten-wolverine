@@ -66,12 +66,6 @@ app.UseHttpsRedirection();
 
 app.MapWolverineEndpoints();
 
-app.MapGet("/mitarbeiter",
-           (IDocumentSession session) => session.Query<Mitarbeiter>());
-
-app.MapPost("/plan",
-            FürTagErstellenHandler.Handle);
-
 app.MapPost("/plan/aufgabe",
             AufgabeErfassenHandler.Handle);
 

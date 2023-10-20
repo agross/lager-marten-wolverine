@@ -8,6 +8,8 @@ public record AufgabeErfasst(Guid AufgabenId, string Aufgabe);
 
 public record AufgabeBegonnen(Guid Id);
 
+public record PlanDeaktiviert;
+
 // Schreibseite.
 public record Plan(string Id,
                    ImmutableHashSet<string> Aufgaben,
@@ -46,6 +48,9 @@ public record Plan(string Id,
 
     return new AufgabeBegonnen(id);
   }
+
+  public PlanDeaktiviert Deaktivieren()
+    => new PlanDeaktiviert();
 
   // Hydration:
   public static Plan Create(PlanErstellt ev)
